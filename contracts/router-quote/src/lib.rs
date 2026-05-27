@@ -416,4 +416,44 @@ mod tests {
         // Only 2 valid requests
         assert_eq!(responses.len(), 2);
     }
+
+    #[test]
+    fn test_set_and_get_quote_ttl() {
+        let (_, client) = setup();
+        assert_eq!(client.get_quote_ttl(), 300); // default
+        client.set_quote_ttl(&600);
+        assert_eq!(client.get_quote_ttl(), 600);
+    }
+
+    #[test]
+    fn test_get_quote_invalid_slippage() {
+        let (env, client) = setup();
+        let token_in = Address::generate(&env);
+        let token_out = Address::generate(&env);
+        let result = client.try_get_quote(
+            &None,
+            &String::from_str(&env, "test"),
+            &token_in,
+            &token_out,
+            &1_000_000,
+            &10_001, // > 10000
+        );
+        assert_eq!(result, Err(Ok(QuoteError::InvalidSlippage)));
+    }
+
+    #[test]
+    fn test_get_quote_invalid_amount() {
+        let (env, client) = setup();
+        let token_in = Address::generate(&env);
+        let token_out = Address::generate(&env);
+        let result = client.try_get_quote(
+            &None,
+            &String::from_str(&env, "test"),
+            &token_in,
+            &token_out,
+            &0,
+            &50,
+        );
+        assert_eq!(result, Err(Ok(QuoteError::InvalidAmount)));
+    }
 }
