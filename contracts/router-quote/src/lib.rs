@@ -655,11 +655,10 @@ impl RouterQuote {
         env: Env,
         router_core: Option<Address>,
         requests: Vec<QuoteRequest>,
-    ) -> Vec<QuoteResponse> {
+    ) -> Vec<Result<QuoteResponse, QuoteError>> {
         let mut responses = Vec::new(&env);
-        
         for req in requests.iter() {
-            let response = Self::get_quote(
+            let result = Self::get_quote(
                 env.clone(),
                 router_core.clone(),
                 req.route_name.clone(),
@@ -668,25 +667,8 @@ impl RouterQuote {
                 req.amount_in,
                 req.slippage_bps,
             );
-            
-            match response {
-                Ok(quote) => responses.push_back(quote),
-                Err(_) => {
-                    // On failure, add a zero quote (caller can check amount_out == 0)
-                    responses.push_back(QuoteResponse {
-                        amount_out: 0,
-                        fee_amount: 0,
-                        route_name: req.route_name.clone(),
-                        target: req.route_name.clone().try_into().unwrap_or(Address::from_contract_id(&env, &[0u8; 32])),
-                        min_amount_out: 0,
-                        exchange_rate: String::from_str(&env, "0"),
-                        price_impact_bps: 0,
-                        expires_at: env.ledger().timestamp(),
-                    });
-                }
-            }
+            responses.push_back(result);
         }
-        
         responses
     }
 
